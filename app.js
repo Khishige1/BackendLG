@@ -3,18 +3,25 @@ import cors from "cors";
 import nodemailer from "./nodemailer.js";
 import http from "http";
 import { Server } from "socket.io";
-import { ask } from "./openai.js"; // Assuming ask is properly exported from openai.js
+import { ask } from "./openai.js";
 
 const app = express();
 app.use(express.json());
 app.use(cors());
 
-const PORT = 8080;
+const PORT = process.env.PORT || 8080;
 
 app.use("/", nodemailer);
 
 const server = http.createServer(app);
-const io = new Server(server);
+
+// Configure Socket.io with CORS
+const io = new Server(server, {
+  cors: {
+    origin: "*", 
+    methods: ["GET", "POST"],
+  },
+});
 
 io.on("connection", (socket) => {
   console.log("New client connected");
@@ -22,7 +29,6 @@ io.on("connection", (socket) => {
   socket.on("ask", async (question) => {
     console.log("Received question:", question);
 
-    // Ensure 'question' is a valid string and prevent errors
     if (typeof question !== "string" || !question.trim()) {
       socket.emit(
         "response",
@@ -47,5 +53,5 @@ io.on("connection", (socket) => {
 });
 
 server.listen(PORT, () => {
-  console.log("Server started on port", PORT);
+  console.log(`Server started on port ${PORT}`);
 });
